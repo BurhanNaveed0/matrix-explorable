@@ -4,7 +4,8 @@
 		MousePointerClick,
 		Mouse,
 		Move,
-		Play
+		Play,
+		RotateCw
 	} from "lucide-svelte";
 	import ActionIcon from "./ActionIcon.svelte";
 	import B from "./B.svelte";
@@ -20,6 +21,10 @@
 </li>
 <li>
 	<ActionIcon icon={Play} /><B>Scrub through the animation</B> of the matrix transformation
+</li>
+<li>
+	<ActionIcon icon={RotateCw} /><B>Pick a transformation</B> in the bottom-left
+	bar to rotate, scale or reflect space, stacking onto the current matrix
 </li>
 <li><ActionIcon icon={Mouse} /> <B>Scroll</B> to zoom in or out</li>
 <li>

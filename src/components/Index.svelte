@@ -7,6 +7,7 @@
 	import ToggleInput from "./matrix/ToggleInput.svelte";
 	import { debug, showPlayground } from "$stores";
 	import TogglePlayground from "./matrix/TogglePlayground.svelte";
+	import TransformBar from "./matrix/TransformBar.svelte";
 	import { loaded } from "$stores";
 	import { gsap, ScrollTrigger } from "$utils/gsap.js";
 	import Footer from "./matrix/Footer.svelte";
@@ -62,6 +63,7 @@
 
 {#if $showPlayground}
 	<TogglePlayground />
+	<TransformBar />
 {/if}
 
 <div
