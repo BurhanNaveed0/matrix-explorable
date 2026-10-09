@@ -15,6 +15,7 @@
 	import { initMatrix, colorX, colorY, colorZ } from "$data/variables";
 	import { gsap } from "$utils/gsap.js";
 	import { from4x4, to4x4, makeTransform } from "$utils/transforms.js";
+	import TransformEquation from "./TransformEquation.svelte";
 
 	const size = 24;
 	const duration = 1;
@@ -69,6 +70,16 @@
 	let tween;
 	let animating = false;
 
+	// While applying, the equation shows the transformation that was applied,
+	// from the matrix it started at, rather than updating mid-animation
+	let frozen;
+	$: equation = frozen ?? {
+		tool: $activeTool,
+		axes,
+		magnitude: $activeTool === "rotate" ? angle : factor,
+		current: $endMatrix
+	};
+
 	// `$matrixTween` holds a reference to the `$endMatrix` array,
 	// so it has to be updated in place rather than replaced
 	function setEndMatrix(values) {
@@ -89,6 +100,8 @@
 		const magnitude = tool === "rotate" ? angle : factor;
 		const state = { t: 0 };
 
+		frozen = { tool, axes: toolAxes, magnitude, current: [...$endMatrix] };
+
 		// Animate the angle / scale factor rather than the matrix entries,
 		// e.g. so that a 180° rotation sweeps around instead of collapsing
 		tween = gsap.to(state, {
@@ -99,7 +112,10 @@
 				const T = makeTransform(tool, toolAxes, magnitude, state.t);
 				setEndMatrix(to4x4(T.mmul(start)));
 			},
-			onComplete: () => (animating = false)
+			onComplete: () => {
+				animating = false;
+				frozen = undefined;
+			}
 		});
 	}
 
@@ -121,99 +137,115 @@
 	}
 
 	// Don't fight the scroll-triggered resets when leaving the playground
-	$: if (!$showPlayground) tween?.kill();
+	$: if (!$showPlayground) {
+		tween?.kill();
+		animating = false;
+		frozen = undefined;
+	}
 	onDestroy(() => tween?.kill());
 </script>
 
 <div
-	class="fixed bottom-8 left-8 flex flex-col items-start gap-2 pointer-events-none"
+	class="fixed bottom-8 left-8 flex items-end gap-3 pointer-events-none"
 	transition:fly={{ x: -20, duration: 200 }}
 >
-	<!-- Options popup for the selected transformation -->
-	{#if $activeTool}
+	<div class="flex flex-col items-start gap-2">
+		<!-- Options popup for the selected transformation -->
+		{#if $activeTool}
+			<div
+				class="panel flex items-center gap-2 pointer-events-auto"
+				transition:fly={{ y: 10, duration: 200 }}
+			>
+				<div class="item" data-state="on">
+					<svelte:component this={activeIcon} {size} />
+				</div>
+
+				{#if $activeTool === "rotate"}
+					<NumberSpinner
+						bind:value={angle}
+						min={-360}
+						max={360}
+						step={1}
+						speed={0.5}
+						format={(v) => `${v}°`}
+						parse={(s) => parseFloat(s)}
+						class="number-spinner"
+					/>
+				{:else if $activeTool === "scale"}
+					<NumberSpinner
+						bind:value={factor}
+						min={0.1}
+						max={10}
+						step={0.1}
+						decimals={1}
+						speed={0.1}
+						format={(v) => `${v.toFixed(1)}×`}
+						parse={(s) => parseFloat(s)}
+						class="number-spinner"
+					/>
+				{/if}
+
+				{#if !rotate2d}
+					<div class="flex gap-1">
+						{#each availableAxes as axis (axis)}
+							<button
+								class="axis"
+								data-state={axes.includes(axis) ? "on" : "off"}
+								style:--axis-color={axisColors[axis]}
+								on:click={() => toggleAxis(axis)}
+							>
+								{axis}
+							</button>
+						{/each}
+					</div>
+				{/if}
+
+				<button
+					class="apply"
+					disabled={animating || !axes.length}
+					on:click={apply}
+				>
+					<Play size={18} />
+					Apply
+				</button>
+			</div>
+		{/if}
+
+		<!-- Transformation types -->
 		<div
-			class="panel flex items-center gap-2 pointer-events-auto"
-			transition:fly={{ y: 10, duration: 200 }}
+			use:melt={$root}
+			class="panel flex items-center gap-1 pointer-events-auto"
 		>
-			<div class="item" data-state="on">
-				<svelte:component this={activeIcon} {size} />
+			<div class="flex items-center gap-1" use:melt={$group}>
+				{#each tools as tool (tool.id)}
+					<button class="item" data-tip={tool.label} use:melt={$item(tool.id)}>
+						<svelte:component this={tool.icon} {size} />
+					</button>
+				{/each}
 			</div>
 
-			{#if $activeTool === "rotate"}
-				<NumberSpinner
-					bind:value={angle}
-					min={-360}
-					max={360}
-					step={1}
-					speed={0.5}
-					format={(v) => `${v}°`}
-					parse={(s) => parseFloat(s)}
-					class="number-spinner"
-				/>
-			{:else if $activeTool === "scale"}
-				<NumberSpinner
-					bind:value={factor}
-					min={0.1}
-					max={10}
-					step={0.1}
-					decimals={1}
-					speed={0.1}
-					format={(v) => `${v.toFixed(1)}×`}
-					parse={(s) => parseFloat(s)}
-					class="number-spinner"
-				/>
-			{/if}
-
-			{#if !rotate2d}
-				<div class="flex gap-1">
-					{#each availableAxes as axis (axis)}
-						<button
-							class="axis"
-							data-state={axes.includes(axis) ? "on" : "off"}
-							style:--axis-color={axisColors[axis]}
-							on:click={() => toggleAxis(axis)}
-						>
-							{axis}
-						</button>
-					{/each}
-				</div>
-			{/if}
+			<div class="separator" use:melt={$separator} />
 
 			<button
-				class="apply"
-				disabled={animating || !axes.length}
-				on:click={apply}
+				class="item"
+				data-tip="Reset Matrix"
+				disabled={animating}
+				on:click={reset}
 			>
-				<Play size={18} />
-				Apply
+				<Undo2 {size} />
 			</button>
 		</div>
-	{/if}
-
-	<!-- Transformation types -->
-	<div
-		use:melt={$root}
-		class="panel flex items-center gap-1 pointer-events-auto"
-	>
-		<div class="flex items-center gap-1" use:melt={$group}>
-			{#each tools as tool (tool.id)}
-				<button class="item" data-tip={tool.label} use:melt={$item(tool.id)}>
-					<svelte:component this={tool.icon} {size} />
-				</button>
-			{/each}
-		</div>
-
-		<div class="separator" use:melt={$separator} />
-
-		<button
-			class="item"
-			data-tip="Reset Matrix"
-			disabled={animating}
-			on:click={reset}
-		>
-			<Undo2 {size} />
-		</button>
 	</div>
+
+	<!-- Effect of the selected transformation on the current matrix -->
+	{#if equation.tool && equation.axes.length}
+		<div
+			class="panel equation px-4 py-3 pointer-events-auto"
+			transition:fly={{ x: -10, duration: 200 }}
+		>
+			<TransformEquation {...equation} dims={$show3d ? 3 : 2} />
+		</div>
+	{/if}
 </div>
 
 <style lang="postcss">
@@ -257,6 +289,10 @@
 	}
 	.apply:disabled {
 		@apply opacity-40;
+	}
+
+	.equation {
+		@apply font-serif text-lg;
 	}
 
 	.separator {
