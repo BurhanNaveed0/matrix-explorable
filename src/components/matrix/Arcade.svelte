@@ -63,8 +63,16 @@
 		egEndMatrix,
 		initMatrix,
 		colorGrid,
-		colorGridAlt
+		colorGridAlt,
+		transformsEndMatrix,
+		transforms3dEndMatrix
 	} from "$data/variables";
+	import {
+		diag4,
+		lerpPath,
+		rotatePath,
+		chainPaths
+	} from "$utils/transforms.js";
 	import colors from "tailwindcss/colors";
 	import CameraControls from "camera-controls";
 	import {
@@ -606,6 +614,84 @@
 	const duration = 0.3;
 
 	const scrollUnit = 1_000;
+
+	// `$matrixTween` holds a reference to the `$endMatrix` array,
+	// so it has to be updated in place rather than replaced
+	function setEndMatrix(values) {
+		values.forEach((v, i) => ($endMatrix[i] = v));
+		$endMatrix = $endMatrix;
+	}
+
+	// Scroll-scrubbed step that drives `$endMatrix` along `path`
+	// (a function from progress 0-1 to a 4x4 matrix array)
+	function matrixStep(trigger, path, { scrollUnits = 1, ...callbacks } = {}) {
+		const state = { t: 0 };
+		const withProgress = (name) => () => {
+			stProps[name]();
+			callbacks[name]?.();
+		};
+
+		return gsap
+			.timeline({
+				...timelineProps,
+				scrollTrigger: {
+					...stProps,
+					trigger,
+					end: `+=${scrollUnit * scrollUnits}`,
+					onEnter: withProgress("onEnter"),
+					onLeave: withProgress("onLeave"),
+					onEnterBack: withProgress("onEnterBack"),
+					onLeaveBack: withProgress("onLeaveBack")
+				}
+			})
+			.add("step-1")
+			.to(
+				state,
+				{
+					t: 1,
+					ease: "power1.inOut",
+					onUpdate: () => setEndMatrix(path(state.t))
+				},
+				"step-1"
+			)
+			.to({}, { duration: delay });
+	}
+
+	// Hide the narrative basis vectors (and their labels), and show the ones
+	// that follow `$endMatrix`, so everything moves with the matrix
+	function swapToLiveBasis(timeline, dim3 = false) {
+		return timeline
+			.to(
+				props,
+				{
+					duration: 0.001,
+					xTexOpacity: 0,
+					yTexOpacity: 0,
+					zTexOpacity: 0,
+					vectorTexOpacity: 0,
+					xVisible: false,
+					yVisible: false,
+					zVisible: false,
+					onUpdate: function () {
+						props = props;
+					}
+				},
+				"step-1"
+			)
+			.to(
+				basisAltProps,
+				{
+					duration: 0.001,
+					xVisible: true,
+					yVisible: true,
+					zVisible: dim3,
+					onUpdate: function () {
+						basisAltProps = basisAltProps;
+					}
+				},
+				"step-1"
+			);
+	}
 
 	function animate() {
 		// FIXME: Review scroll amounts
@@ -1325,6 +1411,48 @@
 				}
 			);
 
+		// Types of transformations: scaling, reflection, rotation
+		const scaleX = diag4(2, 1);
+		const scaleY = diag4(1, 2);
+		const scaleEg = diag4(2, 3);
+		const reflectEg = diag4(1, -1);
+
+		// Back to the identity, and swap in Maxwell
+		swapToLiveBasis(
+			matrixStep("#st-scale-1", lerpPath(egEndMatrix, initMatrix), {
+				onEnter: () => ($dataToggled = "image"),
+				onLeaveBack: () => ($dataToggled = "points")
+			})
+		);
+		// Stretch along x only, then along y only
+		matrixStep(
+			"#st-scale-2",
+			chainPaths(
+				lerpPath(initMatrix, scaleX),
+				lerpPath(scaleX, initMatrix),
+				lerpPath(initMatrix, scaleY),
+				lerpPath(scaleY, initMatrix)
+			),
+			{ scrollUnits: 2 }
+		);
+		matrixStep("#st-scale-3", lerpPath(initMatrix, scaleEg));
+
+		// Back to the identity, and show the example vector
+		matrixStep("#st-reflect-1", lerpPath(scaleEg, initMatrix), {
+			onEnter: () => ($inputVectorToggled = true),
+			onLeaveBack: () => ($inputVectorToggled = false)
+		});
+		matrixStep("#st-reflect-2", lerpPath(initMatrix, reflectEg));
+
+		// Back to the identity, then a full turn
+		matrixStep(
+			"#st-rotate-1",
+			chainPaths(lerpPath(reflectEg, initMatrix), rotatePath("z", 0, 360)),
+			{ scrollUnits: 2 }
+		);
+		// Ends at `transformsEndMatrix`, where the playground picks up
+		matrixStep("#st-rotate-2", rotatePath("z", 0, 90));
+
 		// Let users do some input!
 		gsap
 			.timeline({
@@ -1345,18 +1473,19 @@
 						$cameraControls.reset(true);
 
 						// FIXME: Cache settings!
-						// Reset input settings
-						$dataToggled = "points";
+						// Reset input settings to the end of the
+						// types of transformations walkthrough
+						$dataToggled = "image";
 						$gridToggled = true;
 						$transformedGridToggled = true;
-						$inputVectorToggled = false;
+						$inputVectorToggled = true;
 
 						// Reset playhead
 						$matrixTween.progress(1);
 
 						// Reset matrix transform
 						gsap.to($endMatrix, {
-							endArray: egEndMatrix,
+							endArray: transformsEndMatrix,
 							onUpdate: () => {
 								$endMatrix = $endMatrix;
 							},
@@ -2042,6 +2171,40 @@
 				}
 			);
 
+		// Types of transformations, in 3D
+		const scale3dEg = diag4(2, 2, 1);
+		const reflect3dEg = diag4(1, 1, -1);
+
+		swapToLiveBasis(
+			matrixStep(
+				"#st-3d-scale",
+				chainPaths(
+					lerpPath(eg3dMatrix, initMatrix),
+					lerpPath(initMatrix, scale3dEg)
+				)
+			),
+			true
+		);
+		matrixStep(
+			"#st-3d-reflect",
+			chainPaths(
+				lerpPath(scale3dEg, initMatrix),
+				lerpPath(initMatrix, reflect3dEg)
+			)
+		);
+		// A full turn about each axis in turn;
+		// ends at `transforms3dEndMatrix`, where the playground picks up
+		matrixStep(
+			"#st-3d-rotate",
+			chainPaths(
+				lerpPath(reflect3dEg, initMatrix),
+				rotatePath("x", 0, 360),
+				rotatePath("y", 0, 360),
+				rotatePath("z", 0, 360)
+			),
+			{ scrollUnits: 3 }
+		);
+
 		// Show playground
 		const playgroundTl = gsap
 			.timeline({
@@ -2075,7 +2238,7 @@
 
 						// Reset matrix transform
 						gsap.to($endMatrix, {
-							endArray: eg3dMatrix,
+							endArray: transforms3dEndMatrix,
 							onUpdate: () => {
 								$endMatrix = $endMatrix;
 							},

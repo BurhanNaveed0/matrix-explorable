@@ -319,3 +319,51 @@ ${c14} \\
 ${c15}
 \end{array}\right]
 \end{aligned}`;
+
+// Types of transformations
+const sx = colorTex("s_x", colorX);
+const sy = colorTex("s_y", colorY);
+const sz = colorTex("s_z", colorZ);
+const ex = colorTex("\\mathbf{e}_x", colorX);
+const ey = colorTex("\\mathbf{e}_y", colorY);
+const ez = colorTex("\\mathbf{e}_z", colorZ);
+
+export const scaleGeneral = String.raw`
+S = \begin{bmatrix} ${sx} & 0 \\ 0 & ${sy} \end{bmatrix}
+`;
+export const scaleEg = String.raw`
+S = \begin{bmatrix} ${colorTex("2", colorX)} & 0 \\ 0 & ${colorTex("3", colorY)} \end{bmatrix}
+`;
+export const scale3dGeneral = String.raw`
+S = \begin{bmatrix} ${sx} & 0 & 0 \\ 0 & ${sy} & 0 \\ 0 & 0 & ${sz} \end{bmatrix}
+`;
+export const scale3dEg = String.raw`
+S = \begin{bmatrix} ${colorTex("2", colorX)} & 0 & 0 \\ 0 & ${colorTex("2", colorY)} & 0 \\ 0 & 0 & ${colorTex("1", colorZ)} \end{bmatrix}
+`;
+
+export const reflectX = String.raw`
+R = \begin{bmatrix} 1 & 0 \\ 0 & -1 \end{bmatrix}
+`;
+export const reflectXBasis = String.raw`
+${ex} \to ${ex}, \qquad ${ey} \to -${ey}
+`;
+export const reflectXY = String.raw`
+R_{xy} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & -1 \end{bmatrix}
+`;
+
+export const rotateGeneral = String.raw`
+R(\theta) = \begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{bmatrix}
+`;
+export const rotate90 = String.raw`
+R(90^\circ) = \begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}
+`;
+export const rotate90Basis = String.raw`
+${ex} \to ${ey}, \qquad ${ey} \to -${ex}
+`;
+export const rotate3d = String.raw`
+\begin{aligned}
+R_{${colorTex("x", colorX)}}(\theta) &= \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\theta & -\sin\theta \\ 0 & \sin\theta & \cos\theta \end{bmatrix} \\[1em]
+R_{${colorTex("y", colorY)}}(\theta) &= \begin{bmatrix} \cos\theta & 0 & \sin\theta \\ 0 & 1 & 0 \\ -\sin\theta & 0 & \cos\theta \end{bmatrix} \\[1em]
+R_{${colorTex("z", colorZ)}}(\theta) &= \begin{bmatrix} \cos\theta & -\sin\theta & 0 \\ \sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{bmatrix}
+\end{aligned}
+`;

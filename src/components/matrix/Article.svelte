@@ -4,7 +4,18 @@
 		matrixVectorFormulaColored,
 		vectorAsLinearComb,
 		matrixVectorFormulaEg,
-		matrixVectorFormula3dEg
+		matrixVectorFormula3dEg,
+		scaleGeneral,
+		scaleEg,
+		scale3dGeneral,
+		scale3dEg,
+		reflectX,
+		reflectXBasis,
+		reflectXY,
+		rotateGeneral,
+		rotate90,
+		rotate90Basis,
+		rotate3d
 	} from "$data/tex";
 	import Term from "./Term.svelte";
 	import ColorText from "./ColorText.svelte";
@@ -18,6 +29,7 @@
 	import { Grab } from "lucide-svelte";
 	import ActionIcon from "./ActionIcon.svelte";
 	import InteractionsList from "./InteractionsList.svelte";
+	import KeyIdea from "./KeyIdea.svelte";
 	import { gsap, ScrollTrigger } from "$utils/gsap.js";
 	import { onMount } from "svelte";
 	import { arcadeMounted } from "$stores";
@@ -227,6 +239,100 @@
 
 		<Spacer />
 
+		<p>
+			Before you try it yourself, let's look at three common kinds of
+			transformations — <B>scaling</B>, <B>reflection</B> and <B>rotation</B> —
+			and the matrices behind them.
+		</p>
+
+		<!-- Scaling -->
+		<h3>Scaling</h3>
+
+		<P id="st-scale-1">
+			<B>Scaling</B> changes the size of an object by stretching or shrinking it
+			along one or more coordinate directions.
+		</P>
+
+		<P id="st-scale-2">
+			In 2D, a scaling matrix has the form below, where <Tex
+				expr="s_x"
+			/> controls scaling in the <ColorText color="p"
+				><Tex expr="x" />-direction</ColorText
+			>, and <Tex expr="s_y" /> controls scaling in the <ColorText color="s"
+				><Tex expr="y" />-direction</ColorText
+			>.
+		</P>
+
+		<Tex expr={scaleGeneral} display />
+
+		<P id="st-scale-3">
+			For example, this matrix makes an object twice as wide and three times as
+			tall.
+		</P>
+
+		<Tex expr={scaleEg} display />
+
+		<div class="exclude">
+			<KeyIdea>
+				Scaling changes lengths, but does not change the directions of the
+				coordinate axes when the scale factors are positive.
+			</KeyIdea>
+		</div>
+
+		<Spacer />
+
+		<!-- Reflection -->
+		<h3>Reflection</h3>
+
+		<P id="st-reflect-1">
+			A <B>reflection</B> flips an object across a line in 2D, or across a plane
+			in 3D.
+		</P>
+
+		<P id="st-reflect-2">
+			For example, here is the reflection across the <Tex expr="x" />-axis. The <ColorText
+				color="p"><Tex expr="x" />-direction</ColorText
+			> stays the same, while the <ColorText color="s"
+				><Tex expr="y" />-direction</ColorText
+			> reverses.
+		</P>
+
+		<Tex expr={reflectX} display />
+		<Tex expr={reflectXBasis} display />
+
+		<div class="exclude">
+			<KeyIdea>
+				A reflection reverses one direction while preserving the object's size
+				and shape.
+			</KeyIdea>
+		</div>
+
+		<Spacer />
+
+		<!-- Rotation -->
+		<h3>Rotation</h3>
+
+		<P id="st-rotate-1">
+			A <B>rotation</B> turns an object around the origin. In 2D, rotation by an
+			angle <Tex expr="\theta" /> is given by the matrix below.
+		</P>
+
+		<Tex expr={rotateGeneral} display />
+
+		<P id="st-rotate-2">
+			For example, here is a <Tex expr="90^\circ" /> counterclockwise rotation. The
+			basis vectors rotate while keeping their lengths.
+		</P>
+
+		<Tex expr={rotate90} display />
+		<Tex expr={rotate90Basis} display />
+
+		<div class="exclude">
+			<KeyIdea>Rotation changes direction, but preserves length and shape.</KeyIdea>
+		</div>
+
+		<Spacer />
+
 		<div class="exclude">
 			<P id="st-8">
 				With our understanding so far, try to tinker about and figure out what
@@ -295,6 +401,35 @@
 			visual examples we've seen thus far, the most obvious application of
 			matrix transformations would be that of computer. In fact,
 		</p> -->
+		<h3>Scaling, Reflection and Rotation in 3D</h3>
+
+		<P id="st-3d-scale">
+			Scaling works the same way in 3D, but there is now a scaling factor for
+			each axis. For example, the second matrix below doubles the <Tex
+				expr="x"
+			/>- and <Tex expr="y" />-dimensions while leaving the <Tex expr="z" />-dimension
+			unchanged.
+		</P>
+
+		<Tex expr={scale3dGeneral} display />
+		<Tex expr={scale3dEg} display />
+
+		<P id="st-3d-reflect">
+			A reflection across the <Tex expr="xy" />-plane keeps the <Tex expr="x" />-
+			and <Tex expr="y" />-directions unchanged, while the <ColorText color="a"
+				><Tex expr="z" />-direction</ColorText
+			> reverses.
+		</P>
+
+		<Tex expr={reflectXY} display />
+
+		<P id="st-3d-rotate">
+			A rotation can happen around any of the three coordinate axes. The axis of
+			rotation stays fixed while the other two directions rotate.
+		</P>
+
+		<Tex expr={rotate3d} display />
+
 		<Spacer />
 		<div class="exclude">
 			<p id="st-13">

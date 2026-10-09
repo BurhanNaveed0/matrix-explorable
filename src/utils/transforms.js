@@ -73,3 +73,32 @@ export function makeTransform(tool, axes, magnitude, t = 1) {
 	}
 	return Matrix.eye(3);
 }
+
+// Matrix paths for scroll-driven animations:
+// functions mapping progress `t` (0 to 1) to a flat 4x4 `endMatrix` array
+
+export function diag4(x, y, z = 1) {
+	return [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1];
+}
+
+export function rotation4(axis, degrees) {
+	return to4x4(rotationMatrix(axis, degrees * (Math.PI / 180)));
+}
+
+export function lerpPath(from, to) {
+	return (t) => from.map((a, i) => a + (to[i] - a) * t);
+}
+
+// Sweeps the angle (rather than the matrix entries) so the rotation stays rigid
+export function rotatePath(axis, fromDegrees, toDegrees) {
+	return (t) => rotation4(axis, fromDegrees + (toDegrees - fromDegrees) * t);
+}
+
+// Plays each path in turn, splitting progress evenly between them
+export function chainPaths(...paths) {
+	const n = paths.length;
+	return (t) => {
+		const i = Math.min(Math.floor(t * n), n - 1);
+		return paths[i](t * n - i);
+	};
+}

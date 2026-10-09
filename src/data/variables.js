@@ -1,6 +1,7 @@
 import themeColors from "daisyui/src/theming/themes";
 import { color as d3Color } from "d3";
 import { Matrix } from "ml-matrix";
+import { rotation4 } from "$utils/transforms.js";
 
 // Data
 export const egVector = [-1, 2];
@@ -22,6 +23,11 @@ const v = new Matrix([egVector]).transpose();
 const w = A.mmul(v);
 
 export const egOutputVector = [w.get(0, 0), w.get(1, 0)];
+
+// Where the "types of transformations" walkthroughs leave the matrix,
+// just before each playground starts
+export const transformsEndMatrix = rotation4("z", 90);
+export const transforms3dEndMatrix = initMatrix;
 
 // export const eg3dVector = [2, 3, -1];
 // export const eg3dMatrixX = [0, 1, -2];
